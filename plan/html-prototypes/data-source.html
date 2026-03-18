@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELT系统 - 数据源管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        .main-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            height: 60px;
+            background-color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 1px 4px rgba(0,21,41,.08);
+        }
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #f0f2f5;
+        }
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background-color: #409eff;
+            color: white;
+        }
+        .btn-default {
+            background-color: #c6e2ff;
+            color: #409eff;
+        }
+        .btn-danger {
+            background-color: #f56c6c;
+            color: white;
+        }
+        .btn-mini {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        }
+        .table th, .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ebeef5;
+        }
+        .table th {
+            background-color: #f5f7fa;
+            font-weight: bold;
+        }
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background-color: #ecf5ff;
+            color: #409eff;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #409eff;
+        }
+        .form-section {
+            margin-bottom: 20px;
+        }
+        .form-actions {
+            text-align: right;
+            margin-top: 20px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header">
+            <h3>数据源管理</h3>
+            <div>
+                <button type="button" class="btn btn-default" onclick="location.href='dashboard.html'">返回仪表板</button>
+                <button type="button" class="btn btn-primary" onclick="showAddForm()">添加数据源</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>数据源名称</th>
+                        <th>类型</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="dataSourcesTableBody">
+                    <!-- Data will be populated by JavaScript -->
+                </tbody>
+            </table>
+
+            <!-- 添加/编辑数据源对话框 -->
+            <div id="dataSourceModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="modal-title" id="modalTitle">添加数据源</div>
+                        <button class="close-btn" onclick="closeModal()">&times;</button>
+                    </div>
+
+                    <form id="dataSourceForm">
+                        <div class="form-group">
+                            <label for="name">数据源名称</label>
+                            <input type="text" id="name" name="name" placeholder="请输入数据源名称" required>
+                            <div id="name-error" class="error-message" style="color: red; font-size: 12px; margin-top: 5px;"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="type">数据库类型</label>
+                            <select id="type" name="type" required>
+                                <option value="">请选择数据库类型</option>
+                                <option value="hive">Hive</option>
+                                <option value="kingbase8">Kingbase8</option>
+                            </select>
+                            <div id="type-error" class="error-message" style="color: red; font-size: 12px; margin-top: 5px;"></div>
+                        </div>
+
+                        <div class="form-section">
+                            <h4>连接参数</h4>
+
+                            <div class="form-group">
+                                <label for="host">主机地址</label>
+                                <input type="text" id="host" name="host" placeholder="请输入主机地址" required>
+                                <div id="host-error" class="error-message" style="color: red; font-size: 12px; margin-top: 5px;"></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="port">端口</label>
+                                <input type="number" id="port" name="port" placeholder="请输入端口号" required>
+                                <div id="port-error" class="error-message" style="color: red; font-size: 12px; margin-top: 5px;"></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="database">数据库名</label>
+                                <input type="text" id="database" name="database" placeholder="请输入数据库名" required>
+                                <div id="database-error" class="error-message" style="color: red; font-size: 12px; margin-top: 5px;"></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="username">用户名</label>
+                                <input type="text" id="username" name="username" placeholder="请输入用户名" required>
+                                <div id="username-error" class="error-message" style="color: red; font-size: 12px; margin-top: 5px;"></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="password">密码</label>
+                                <input type="password" id="password" name="password" placeholder="请输入密码">
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-default" onclick="closeModal()">取 消</button>
+                            <button type="button" class="btn btn-primary" onclick="submitDataSourceForm()">确 定</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize data sources
+        let dataSources = [
+            { id: 1, name: 'Hive生产环境', type: 'hive', createdAt: '2023-01-15 10:30:00' },
+            { id: 2, name: 'Kingbase开发库', type: 'kingbase8', createdAt: '2023-01-20 14:22:15' }
+        ];
+
+        let isEditing = false;
+        let editingId = null;
+
+        // Display data sources in table
+        function displayDataSources() {
+            const tbody = document.getElementById('dataSourcesTableBody');
+            tbody.innerHTML = '';
+
+            dataSources.forEach(source => {
+                const row = document.createElement('tr');
+
+                // Determine tag style based on type
+                let tagStyle = 'background-color: #ecf5ff; color: #409eff;';
+                if (source.type === 'hive') {
+                    tagStyle = 'background-color: #ecf5ff; color: #409eff;';
+                } else if (source.type === 'kingbase8') {
+                    tagStyle = 'background-color: #f0f9eb; color: #67c23a;';
+                }
+
+                row.innerHTML = `
+                    <td>${source.name}</td>
+                    <td><span class="tag" style="${tagStyle}">${source.type}</span></td>
+                    <td>${source.createdAt}</td>
+                    <td>
+                        <button class="btn btn-default btn-mini" onclick="testConnection(${source.id})">测试连接</button>
+                        <button class="btn btn-default btn-mini" onclick="editDataSource(${source.id})">编辑</button>
+                        <button class="btn btn-danger btn-mini" onclick="deleteDataSource(${source.id})">删除</button>
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+            });
+        }
+
+        // Show add form
+        function showAddForm() {
+            isEditing = false;
+            editingId = null;
+            document.getElementById('modalTitle').textContent = '添加数据源';
+
+            // Reset form
+            document.getElementById('dataSourceForm').reset();
+            clearErrors();
+
+            // Show modal
+            document.getElementById('dataSourceModal').style.display = 'flex';
+        }
+
+        // Edit data source
+        function editDataSource(id) {
+            const source = dataSources.find(s => s.id === id);
+            if (source) {
+                isEditing = true;
+                editingId = id;
+                document.getElementById('modalTitle').textContent = '编辑数据源';
+
+                // Populate form
+                document.getElementById('name').value = source.name;
+                document.getElementById('type').value = source.type;
+                document.getElementById('host').value = source.host || '';
+                document.getElementById('port').value = source.port || '';
+                document.getElementById('database').value = source.database || '';
+                document.getElementById('username').value = source.username || '';
+
+                // Show modal
+                document.getElementById('dataSourceModal').style.display = 'flex';
+            }
+        }
+
+        // Delete data source
+        function deleteDataSource(id) {
+            if (confirm(`确定要删除数据源吗？`)) {
+                dataSources = dataSources.filter(item => item.id !== id);
+                displayDataSources();
+                alert('删除成功！');
+            }
+        }
+
+        // Test connection
+        function testConnection(id) {
+            const source = dataSources.find(s => s.id === id);
+            if (source) {
+                alert(`正在测试${source.name}的连接...`);
+                // Simulate API call
+                setTimeout(() => {
+                    alert('连接成功！');
+                }, 1000);
+            }
+        }
+
+        // Validate form
+        function validateForm() {
+            clearErrors();
+            let isValid = true;
+
+            const name = document.getElementById('name').value.trim();
+            const type = document.getElementById('type').value;
+            const host = document.getElementById('host').value.trim();
+            const port = document.getElementById('port').value.trim();
+            const database = document.getElementById('database').value.trim();
+            const username = document.getElementById('username').value.trim();
+
+            if (!name) {
+                document.getElementById('name-error').textContent = '请输入数据源名称';
+                isValid = false;
+            }
+
+            if (!type) {
+                document.getElementById('type-error').textContent = '请选择数据库类型';
+                isValid = false;
+            }
+
+            if (!host) {
+                document.getElementById('host-error').textContent = '请输入主机地址';
+                isValid = false;
+            }
+
+            if (!port) {
+                document.getElementById('port-error').textContent = '请输入端口号';
+                isValid = false;
+            } else if (isNaN(port) || parseInt(port) <= 0) {
+                document.getElementById('port-error').textContent = '端口号必须为正整数';
+                isValid = false;
+            }
+
+            if (!database) {
+                document.getElementById('database-error').textContent = '请输入数据库名';
+                isValid = false;
+            }
+
+            if (!username) {
+                document.getElementById('username-error').textContent = '请输入用户名';
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        // Submit form
+        function submitDataSourceForm() {
+            if (!validateForm()) {
+                return;
+            }
+
+            const formData = {
+                name: document.getElementById('name').value,
+                type: document.getElementById('type').value,
+                host: document.getElementById('host').value,
+                port: parseInt(document.getElementById('port').value),
+                database: document.getElementById('database').value,
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value
+            };
+
+            if (isEditing) {
+                // Update existing data source
+                const index = dataSources.findIndex(item => item.id === editingId);
+                if (index !== -1) {
+                    Object.assign(dataSources[index], formData);
+                }
+                alert('更新成功！');
+            } else {
+                // Add new data source
+                const newId = Math.max(...dataSources.map(item => item.id), 0) + 1;
+                dataSources.push({
+                    ...formData,
+                    id: newId,
+                    createdAt: new Date().toLocaleString()
+                });
+                alert('添加成功！');
+            }
+
+            // Close modal and refresh table
+            closeModal();
+            displayDataSources();
+        }
+
+        // Clear form errors
+        function clearErrors() {
+            document.getElementById('name-error').textContent = '';
+            document.getElementById('type-error').textContent = '';
+            document.getElementById('host-error').textContent = '';
+            document.getElementById('port-error').textContent = '';
+            document.getElementById('database-error').textContent = '';
+            document.getElementById('username-error').textContent = '';
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('dataSourceModal').style.display = 'none';
+        }
+
+        // Handle clicks outside modal to close it
+        window.onclick = function(event) {
+            const modal = document.getElementById('dataSourceModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            displayDataSources();
+        });
+    </script>
+</body>
+</html>

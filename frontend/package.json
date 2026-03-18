@@ -1,0 +1,31 @@
+{
+  "name": "etl-frontend",
+  "version": "1.0.0",
+  "description": "ETL System Frontend",
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
+  },
+  "dependencies": {
+    "@antv/g6": "^4.8.24",
+    "@element-plus/icons-vue": "^2.3.1",
+    "axios": "^1.6.2",
+    "element-plus": "^2.4.2",
+    "vue": "^3.3.8",
+    "vue-router": "^4.2.5",
+    "vuex": "^4.1.0"
+  },
+  "devDependencies": {
+    "@vue/cli-service": "^5.0.8",
+    "@vue/compiler-sfc": "^3.3.8",
+    "sass": "^1.69.5",
+    "sass-loader": "^13.3.2"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ]
+}

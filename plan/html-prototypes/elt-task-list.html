@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELT系统 - ELT任务列表</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        .main-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            height: 60px;
+            background-color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 1px 4px rgba(0,21,41,.08);
+        }
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #f0f2f5;
+        }
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background-color: #409eff;
+            color: white;
+        }
+        .btn-success {
+            background-color: #67c23a;
+            color: white;
+        }
+        .btn-warning {
+            background-color: #e6a23c;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #f56c6c;
+            color: white;
+        }
+        .btn-mini {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        }
+        .table th, .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ebeef5;
+        }
+        .table th {
+            background-color: #f5f7fa;
+            font-weight: bold;
+        }
+        .status-running {
+            background-color: #f0f9eb;
+            color: #67c23a;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .status-success {
+            background-color: #ecf5ff;
+            color: #409eff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .status-failed {
+            background-color: #fef0f0;
+            color: #f56c6c;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .status-pending {
+            background-color: #f4f4f5;
+            color: #909399;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .search-bar {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        }
+        .search-input {
+            padding: 8px 12px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            width: 250px;
+            margin-right: 10px;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .page-btn {
+            padding: 6px 12px;
+            margin: 0 4px;
+            border: 1px solid #dcdfe6;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .page-btn.active {
+            background: #409eff;
+            color: white;
+            border-color: #409eff;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header">
+            <h3>ELT任务列表</h3>
+            <div>
+                <button type="button" class="btn btn-default" onclick="location.href='dashboard.html'">返回仪表板</button>
+                <button type="button" class="btn btn-primary" onclick="location.href='elt-config.html'">创建任务</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="search-bar">
+                <input type="text" class="search-input" placeholder="搜索任务名称...">
+                <button type="button" class="btn btn-primary">搜索</button>
+                <select style="padding: 8px; border: 1px solid #dcdfe6; border-radius: 4px; margin-left: 10px;">
+                    <option value="">全部状态</option>
+                    <option value="pending">待执行</option>
+                    <option value="running">运行中</option>
+                    <option value="success">成功</option>
+                    <option value="failed">失败</option>
+                </select>
+            </div>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>任务名称</th>
+                        <th>源数据源</th>
+                        <th>目标数据源</th>
+                        <th>状态</th>
+                        <th>最后执行时间</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>订单数据同步</td>
+                        <td>Hive生产环境</td>
+                        <td>Kingbase开发库</td>
+                        <td><span class="status-success">成功</span></td>
+                        <td>2023-01-15 10:30:00</td>
+                        <td>2023-01-10 09:15:00</td>
+                        <td>
+                            <button class="btn btn-primary btn-mini" onclick="editTask(1)">编辑</button>
+                            <button class="btn btn-success btn-mini" onclick="executeTask(1)">执行</button>
+                            <button class="btn btn-danger btn-mini" onclick="deleteTask(1)">删除</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>用户信息同步</td>
+                        <td>Kingbase开发库</td>
+                        <td>Hive生产环境</td>
+                        <td><span class="status-running">运行中</span></td>
+                        <td>2023-01-15 11:45:00</td>
+                        <td>2023-01-12 14:20:00</td>
+                        <td>
+                            <button class="btn btn-primary btn-mini" onclick="editTask(2)">编辑</button>
+                            <button class="btn btn-warning btn-mini" onclick="stopTask(2)">停止</button>
+                            <button class="btn btn-danger btn-mini" onclick="deleteTask(2)">删除</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>产品数据更新</td>
+                        <td>Hive生产环境</td>
+                        <td>Kingbase开发库</td>
+                        <td><span class="status-failed">失败</span></td>
+                        <td>2023-01-15 09:15:00</td>
+                        <td>2023-01-08 16:30:00</td>
+                        <td>
+                            <button class="btn btn-primary btn-mini" onclick="editTask(3)">编辑</button>
+                            <button class="btn btn-success btn-mini" onclick="executeTask(3)">执行</button>
+                            <button class="btn btn-danger btn-mini" onclick="deleteTask(3)">删除</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>销售报表汇总</td>
+                        <td>Kingbase开发库</td>
+                        <td>Hive生产环境</td>
+                        <td><span class="status-pending">待执行</span></td>
+                        <td>-</td>
+                        <td>2023-01-14 08:00:00</td>
+                        <td>
+                            <button class="btn btn-primary btn-mini" onclick="editTask(4)">编辑</button>
+                            <button class="btn btn-success btn-mini" onclick="executeTask(4)">执行</button>
+                            <button class="btn btn-danger btn-mini" onclick="deleteTask(4)">删除</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="pagination">
+                <button class="page-btn">上一页</button>
+                <button class="page-btn active">1</button>
+                <button class="page-btn">2</button>
+                <button class="page-btn">3</button>
+                <button class="page-btn">下一页</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function editTask(id) {
+            alert(`编辑任务 ${id}`);
+            // In a real application, this would navigate to an edit page
+        }
+
+        function executeTask(id) {
+            alert(`执行任务 ${id}`);
+        }
+
+        function deleteTask(id) {
+            if (confirm(`确定要删除任务吗？`)) {
+                alert('任务已删除');
+            }
+        }
+
+        function stopTask(id) {
+            if (confirm(`确定要停止任务吗？`)) {
+                alert('任务已停止');
+            }
+        }
+    </script>
+</body>
+</html>

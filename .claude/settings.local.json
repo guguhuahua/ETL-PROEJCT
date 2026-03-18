@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"Select-String -Path ''e:\\\\AI-project\\\\ELT-NEW-project\\\\plan\\\\html-prototypes\\\\elt-config.html'' -Pattern ''function''\")",
+      "Bash(pip install:*)",
+      "Bash(python -m pip install flask flask-jwt-extended flask-sqlalchemy flask-cors werkzeug)",
+      "Bash(findstr :8080)"
+    ],
+    "additionalDirectories": [
+      "e:\\AI-project\\ELT-NEW-project\\plan"
+    ]
+  }
+}

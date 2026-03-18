@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELT系统 - ELT任务配置</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        .main-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            height: 60px;
+            background-color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 1px 4px rgba(0,21,41,.08);
+        }
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #f0f2f5;
+        }
+        .steps-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        }
+        .steps {
+            display: flex;
+            width: 100%;
+            max-width: 1000px;
+        }
+        .step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+        .step:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            right: -50%;
+            height: 2px;
+            background: #e4e7ed;
+            z-index: 1;
+        }
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e4e7ed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            z-index: 2;
+            position: relative;
+        }
+        .step.active .step-circle {
+            background: #409eff;
+            color: white;
+        }
+        .step.completed .step-circle {
+            background: #67c23a;
+            color: white;
+        }
+        .step-title {
+            font-size: 14px;
+            color: #606266;
+        }
+        .step.active .step-title {
+            color: #409eff;
+            font-weight: bold;
+        }
+        .step.completed .step-title {
+            color: #67c23a;
+            font-weight: bold;
+        }
+        .config-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .panel-section {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .panel-section:last-child {
+            border-bottom: none;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: #409eff;
+        }
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background-color: #409eff;
+            color: white;
+        }
+        .btn-default {
+            background-color: #c6e2ff;
+            color: #409eff;
+        }
+        .btn-danger {
+            background-color: #f56c6c;
+            color: white;
+        }
+        .btn-mini {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        .table th, .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ebeef5;
+        }
+        .table th {
+            background-color: #f5f7fa;
+            font-weight: bold;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 22px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 22px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #409eff;
+        }
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+        .radio-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .radio-item {
+            display: flex;
+            align-items: center;
+        }
+        .radio-item input {
+            margin-right: 5px;
+        }
+        .hidden {
+            display: none;
+        }
+        .step-content {
+            display: none;
+        }
+        .step-content.active {
+            display: block;
+        }
+        .form-actions {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .dependency-selector {
+            background: #f5f7fa;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        textarea {
+            font-family: monospace;
+            resize: vertical;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header">
+            <h3>ELT任务配置</h3>
+            <div>
+                <button type="button" class="btn btn-default" onclick="location.href='elt-task-list.html'">返回列表</button>
+                <button type="button" class="btn btn-default" onclick="location.href='dashboard.html'">返回仪表板</button>
+                <button type="button" class="btn btn-primary" onclick="saveTask()">保存任务</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="steps-container">
+                <div class="steps">
+                    <div class="step" id="step0">
+                        <div class="step-circle">1</div>
+                        <div class="step-title">基本信息</div>
+                    </div>
+                    <div class="step" id="step1">
+                        <div class="step-circle">2</div>
+                        <div class="step-title">数据源选择</div>
+                    </div>
+                    <div class="step" id="step2">
+                        <div class="step-circle">3</div>
+                        <div class="step-title">字段映射</div>
+                    </div>
+                    <div class="step" id="step3">
+                        <div class="step-circle">4</div>
+                        <div class="step-title">转换规则</div>
+                    </div>
+                    <div class="step" id="step4">
+                        <div class="step-circle">5</div>
+                        <div class="step-title">时间过滤</div>
+                    </div>
+                    <div class="step" id="step5">
+                        <div class="step-circle">6</div>
+                        <div class="step-title">高级配置</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 1: Basic Info -->
+            <div class="config-panel step-content active" id="stepContent0">
+                <div class="section-title">任务基本信息</div>
+
+                <div class="form-group">
+                    <label for="taskName">任务名称 *</label>
+                    <input type="text" id="taskName" placeholder="请输入任务名称" required>
+                    <div id="taskName-error" class="error-message" style="color: red; font-size: 12px; margin-top: 5px;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="taskDescription">任务描述</label>
+                    <textarea id="taskDescription" rows="4" placeholder="请输入任务描述"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-primary" onclick="nextStep()">下一步</button>
+                </div>
+            </div>
+
+            <!-- Step 2: Data Source Selection -->
+            <div class="config-panel step-content" id="stepContent1">
+                <div class="section-title">数据源选择</div>
+
+                <div class="form-group">
+                    <label for="sourceDb">源数据源 *</label>
+                    <select id="sourceDb" required>
+                        <option value="">请选择源数据源</option>
+                        <option value="1">Hive生产环境</option>
+                        <option value="2">Kingbase开发库</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="targetDb">目标数据源 *</label>
+                    <select id="targetDb" required>
+                        <option value="">请选择目标数据源</option>
+                        <option value="1">Hive生产环境</option>
+                        <option value="2">Kingbase开发库</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>源数据选择方式</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="sourceType" value="table" onchange="toggleSourceType('table')" checked> 选择表
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="sourceType" value="sql" onchange="toggleSourceType('sql')"> 自定义SQL查询
+                        </label>
+                    </div>
+                </div>
+
+                <div id="tableSourceSection">
+                    <div class="grid-2col">
+                        <div class="form-group">
+                            <label for="sourceTable">源表 *</label>
+                            <input type="text" id="sourceTable" placeholder="请输入源表名" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="targetTable">目标表 *</label>
+                            <input type="text" id="targetTable" placeholder="请输入目标表名" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="sqlSourceSection" class="hidden">
+                    <div class="form-group">
+                        <label for="sourceSql">源SQL查询 *</label>
+                        <textarea id="sourceSql" rows="6" placeholder="请输入SQL查询语句，例如：SELECT col1, col2 FROM table1 t1 JOIN table2 t2 ON t1.id = t2.ref_id WHERE t1.status = 'active'"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>SQL助手</label>
+                        <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+                            <button type="button" class="btn btn-default btn-mini" onclick="insertTemplate('join')">JOIN模板</button>
+                            <button type="button" class="btn btn-default btn-mini" onclick="insertTemplate('union')">UNION模板</button>
+                            <button type="button" class="btn btn-default btn-mini" onclick="insertTemplate('aggregate')">聚合模板</button>
+                            <button type="button" class="btn btn-default btn-mini" onclick="validateSql()">SQL验证</button>
+                            <button type="button" class="btn btn-primary btn-mini" onclick="previewSqlResult()">预览结果</button>
+                            <button type="button" class="btn btn-default btn-mini" onclick="openSqlEditor()">高级编辑器</button>
+                        </div>
+                    </div>
+
+                    <div id="sqlPreviewSection" class="hidden">
+                        <div class="form-group">
+                            <label>查询结果预览</label>
+                            <div style="background: #f5f7fa; padding: 15px; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+                                <table class="table" style="font-size: 12px;">
+                                    <thead id="sqlPreviewHeader">
+                                        <tr>
+                                            <th>列名</th>
+                                            <th>数据类型</th>
+                                            <th>示例值</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sqlPreviewBody">
+                                        <!-- Preview data will be populated by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="targetTableSql">目标表 *</label>
+                        <input type="text" id="targetTableSql" placeholder="请输入目标表名" required>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-default" onclick="previousStep()">上一步</button>
+                    <button type="button" class="btn btn-primary" onclick="nextStep()">下一步</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Field Mapping -->
+            <div class="config-panel step-content" id="stepContent2">
+                <div class="section-title">字段映射</div>
+
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>源字段</th>
+                            <th>转换操作</th>
+                            <th>目标字段</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fieldMappingsTable">
+                        <tr>
+                            <td><input type="text" class="field-mapping-input" placeholder="源字段名"></td>
+                            <td>
+                                <select class="field-mapping-select">
+                                    <option value="none">无转换</option>
+                                    <option value="type_conversion">类型转换</option>
+                                    <option value="string_process">字符串处理</option>
+                                    <option value="date_format">日期格式化</option>
+                                    <option value="math_operation">数学运算</option>
+                                </select>
+                            </td>
+                            <td><input type="text" class="field-mapping-input" placeholder="目标字段名"></td>
+                            <td><button type="button" class="btn btn-danger btn-mini" onclick="removeFieldMapping(this)">删除</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div>
+                    <button type="button" class="btn btn-default" onclick="addFieldMapping()">添加字段映射</button>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-default" onclick="previousStep()">上一步</button>
+                    <button type="button" class="btn btn-primary" onclick="nextStep()">下一步</button>
+                </div>
+            </div>
+
+            <!-- Step 4: Transformation Rules -->
+            <div class="config-panel step-content" id="stepContent3">
+                <div class="section-title">转换规则</div>
+
+                <div class="panel-section">
+                    <div class="form-group">
+                        <label>启用JOIN操作</label>
+                        <label class="switch">
+                            <input type="checkbox" id="enableJoin" onchange="toggleJoinOptions()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div id="joinOptions" class="hidden">
+                        <div class="grid-2col">
+                            <div class="form-group">
+                                <label for="joinTable">关联表</label>
+                                <input type="text" id="joinTable" placeholder="请输入关联表名">
+                            </div>
+                            <div class="form-group">
+                                <label for="joinType">JOIN类型</label>
+                                <select id="joinType">
+                                    <option value="inner">INNER JOIN</option>
+                                    <option value="left">LEFT JOIN</option>
+                                    <option value="right">RIGHT JOIN</option>
+                                    <option value="full">FULL OUTER JOIN</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="joinCondition">关联条件</label>
+                            <input type="text" id="joinCondition" placeholder="例如: t1.id = t2.ref_id">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <div class="form-group">
+                        <label for="filters">数据过滤条件</label>
+                        <textarea id="filters" rows="4" placeholder="请输入SQL WHERE条件，例如: status = 'active' AND created_date > '2023-01-01'"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-default" onclick="previousStep()">上一步</button>
+                    <button type="button" class="btn btn-primary" onclick="nextStep()">下一步</button>
+                </div>
+            </div>
+
+            <!-- Step 5: Time Filtering -->
+            <div class="config-panel step-content" id="stepContent4">
+                <div class="section-title">时间范围过滤</div>
+
+                <div class="form-group">
+                    <label>启用时间过滤</label>
+                    <label class="switch">
+                        <input type="checkbox" id="enableTimeFilter" onchange="toggleTimeFilterOptions()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div id="timeFilterOptions" class="hidden">
+                    <div class="form-group">
+                        <label for="timeField">时间字段</label>
+                        <input type="text" id="timeField" placeholder="请输入时间字段名，如：create_date">
+                    </div>
+
+                    <div class="grid-2col">
+                        <div class="form-group">
+                            <label for="startTime">开始时间</label>
+                            <input type="datetime-local" id="startTime">
+                        </div>
+                        <div class="form-group">
+                            <label for="endTime">结束时间</label>
+                            <input type="datetime-local" id="endTime">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>时间条件类型</label>
+                        <div class="radio-group">
+                            <label class="radio-item">
+                                <input type="radio" name="timeCondition" value="between" checked> 在时间范围内
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="timeCondition" value="after"> 晚于指定时间
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="timeCondition" value="before"> 早于指定时间
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-default" onclick="previousStep()">上一步</button>
+                    <button type="button" class="btn btn-primary" onclick="nextStep()">下一步</button>
+                </div>
+            </div>
+
+            <!-- Step 6: Advanced Configuration -->
+            <div class="config-panel step-content" id="stepContent5">
+                <div class="section-title">高级配置</div>
+
+                <div class="panel-section">
+                    <div class="grid-2col">
+                        <div class="form-group">
+                            <label for="loadStrategy">加载策略</label>
+                            <select id="loadStrategy">
+                                <option value="append">追加模式</option>
+                                <option value="overwrite">覆盖模式</option>
+                                <option value="upsert">更新插入模式</option>
+                                <option value="incremental">增量加载</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="batchSize">批次大小</label>
+                            <input type="number" id="batchSize" value="1000" min="1" placeholder="每次处理记录数">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <div class="form-group">
+                        <label for="errorHandling">错误处理策略</label>
+                        <select id="errorHandling">
+                            <option value="stop_on_error">遇到错误立即停止</option>
+                            <option value="skip_error_records">跳过错误记录继续执行</option>
+                            <option value="log_errors_only">仅记录错误并继续</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <div class="form-group">
+                        <label>任务依赖关系</label>
+                        <div class="dependency-selector">
+                            <label class="switch">
+                                <input type="checkbox" id="enableDependencies" onchange="toggleDependencyOptions()">
+                                <span class="slider"></span>
+                            </label>
+                            <span>启用依赖关系</span>
+                        </div>
+
+                        <div id="dependencyOptions" class="hidden" style="margin-top: 15px;">
+                            <label for="dependencyTasks">依赖的任务</label>
+                            <select id="dependencyTasks" multiple size="4" style="width: 100%; height: auto;">
+                                <option value="1">订单数据同步</option>
+                                <option value="2">用户信息同步</option>
+                                <option value="3">产品数据更新</option>
+                                <option value="4">销售报表汇总</option>
+                            </select>
+                            <small style="display: block; margin-top: 5px;">按住Ctrl键可多选</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-default" onclick="previousStep()">上一步</button>
+                    <button type="button" class="btn btn-primary" onclick="finishConfiguration()">完成配置</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 0;
+
+        // Initialize the form
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStepsDisplay();
+
+            // Listen for messages from SQL editor
+            window.addEventListener('message', function(event) {
+                if (event.data && event.data.type === 'sqlSaved') {
+                    // Update the SQL textbox with the saved query
+                    document.getElementById('sourceSql').value = event.data.sql;
+
+                    // Update the column preview
+                    updateColumnPreview();
+
+                    alert('SQL查询已从编辑器导入');
+                }
+            });
+        });
+
+        // Toggle source type (table or SQL)
+        function toggleSourceType(type) {
+            const tableSection = document.getElementById('tableSourceSection');
+            const sqlSection = document.getElementById('sqlSourceSection');
+
+            if (type === 'table') {
+                tableSection.classList.remove('hidden');
+                sqlSection.classList.add('hidden');
+            } else if (type === 'sql') {
+                tableSection.classList.add('hidden');
+                sqlSection.classList.remove('hidden');
+            }
+        }
+
+        // Open SQL editor in a new window/tab
+        function openSqlEditor() {
+            // Store the current SQL in sessionStorage
+            const currentSql = document.getElementById('sourceSql')?.value || '';
+            sessionStorage.setItem('currentSqlQuery', currentSql);
+
+            // Open the SQL editor in a new tab
+            window.open('sql-editor.html', '_blank');
+        }
+
+        // Insert SQL template
+        function insertTemplate(templateType) {
+            const sqlTextarea = document.getElementById('sourceSql');
+            let template = '';
+
+            switch(templateType) {
+                case 'join':
+                    template = "SELECT \n  t1.column1,\n  t2.column2\nFROM table1 t1\nJOIN table2 t2 ON t1.id = t2.ref_id\nWHERE t1.status = 'active';";
+                    break;
+                case 'union':
+                    template = "SELECT column1, column2 FROM table1\nUNION ALL\nSELECT column1, column2 FROM table2;";
+                    break;
+                case 'aggregate':
+                    template = "SELECT \n  category,\n  COUNT(*) as count,\n  SUM(amount) as total_amount,\n  AVG(price) as avg_price\nFROM products\nGROUP BY category\nHAVING COUNT(*) > 10;";
+                    break;
+                default:
+                    template = '';
+            }
+
+            if (sqlTextarea.value.trim() === '') {
+                sqlTextarea.value = template;
+            } else {
+                sqlTextarea.value += '\n\n' + template;
+            }
+
+            // Focus the textarea and position cursor at the end
+            sqlTextarea.focus();
+            sqlTextarea.setSelectionRange(sqlTextarea.value.length, sqlTextarea.value.length);
+        }
+
+        // Validate SQL query
+        function validateSql() {
+            const sql = document.getElementById('sourceSql').value.trim();
+            if (!sql) {
+                alert('请输入SQL查询语句');
+                return;
+            }
+
+            // Basic validation checks
+            let issues = [];
+
+            // Check if it's a SELECT statement
+            if (!/^(\s*SELECT|\s*WITH)/i.test(sql)) {
+                issues.push('SQL语句应以SELECT或WITH开头');
+            }
+
+            // Check for basic syntax
+            if (!/(FROM|JOIN|UNION|VALUES)/i.test(sql)) {
+                issues.push('SQL语句缺少数据源（FROM/JOIN/UNION等）');
+            }
+
+            if (issues.length > 0) {
+                alert('SQL语法检查发现以下问题：\n' + issues.join('\n'));
+            } else {
+                alert('SQL语法检查通过');
+            }
+        }
+
+        // Preview SQL result columns
+        function previewSqlResult() {
+            const sql = document.getElementById('sourceSql').value.trim();
+            if (!sql) {
+                alert('请输入SQL查询语句');
+                return;
+            }
+
+            // Extract column names from SQL using regex
+            // This is a simplified parser - in a real application, a proper SQL parser would be needed
+            const columns = extractColumnsFromSql(sql);
+
+            // Show the preview section
+            const previewSection = document.getElementById('sqlPreviewSection');
+            previewSection.classList.remove('hidden');
+
+            // Update the preview table
+            const tbody = document.getElementById('sqlPreviewBody');
+            tbody.innerHTML = '';
+
+            if (columns.length > 0) {
+                columns.forEach(col => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${col.name}</td>
+                        <td>${col.type || 'VARCHAR'}</td>
+                        <td>${col.example || '示例数据'}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="3">无法解析SQL中的列名，请检查SQL语法</td>
+                `;
+                tbody.appendChild(row);
+            }
+        }
+
+        // Extract column names from SQL query (simplified parser)
+        function extractColumnsFromSql(sql) {
+            // Simplified algorithm to extract column names from SELECT statement
+            const lowerSql = sql.toLowerCase();
+            const selectIndex = lowerSql.indexOf('select');
+            const fromIndex = lowerSql.indexOf('from');
+
+            if (selectIndex === -1 || fromIndex === -1 || selectIndex > fromIndex) {
+                return [];
+            }
+
+            // Extract the part between SELECT and FROM
+            const selectPart = sql.substring(selectIndex + 6, fromIndex);
+
+            // Split by commas but respect parentheses for functions
+            const columns = parseColumnList(selectPart);
+
+            return columns;
+        }
+
+        // Parse column list considering functions and aliases
+        function parseColumnList(selectStr) {
+            const columns = [];
+            let currentCol = '';
+            let parenLevel = 0;
+            let inQuotes = false;
+            let quoteChar = null;
+
+            for (let i = 0; i < selectStr.length; i++) {
+                const char = selectStr[i];
+
+                if ((char === '"' || char === "'") && !inQuotes) {
+                    inQuotes = true;
+                    quoteChar = char;
+                } else if (char === quoteChar && inQuotes) {
+                    inQuotes = false;
+                    quoteChar = null;
+                } else if (char === '(' && !inQuotes) {
+                    parenLevel++;
+                } else if (char === ')' && !inQuotes) {
+                    parenLevel--;
+                } else if (char === ',' && parenLevel === 0 && !inQuotes) {
+                    // Found end of column
+                    currentCol = currentCol.trim();
+                    if (currentCol) {
+                        const col = parseSingleColumn(currentCol);
+                        columns.push(col);
+                    }
+                    currentCol = '';
+                    continue;
+                }
+
+                currentCol += char;
+            }
+
+            // Handle last column
+            currentCol = currentCol.trim();
+            if (currentCol) {
+                const col = parseSingleColumn(currentCol);
+                columns.push(col);
+            }
+
+            return columns;
+        }
+
+        // Parse a single column expression
+        function parseSingleColumn(colExpr) {
+            // Extract alias if present (after AS keyword or just trailing word)
+            const lowerCol = colExpr.toLowerCase();
+            let aliasMatch = colExpr.match(/\s+as\s+(\w+)$/i);
+            if (!aliasMatch) {
+                // Check for implicit alias (trailing word not part of function)
+                const parts = colExpr.trim().split(/\s+/);
+                const lastPart = parts[parts.length - 1];
+                // If it's not a function or operator, consider it an alias
+                if (!['+', '-', '*', '/', '%', '(', ')'].includes(lastPart) &&
+                    !lowerCol.includes('function') && !lowerCol.includes('count') &&
+                    !lowerCol.includes('sum') && !lowerCol.includes('avg') &&
+                    !lowerCol.includes('max') && !lowerCol.includes('min')) {
+                    // For simplicity in this demo, we'll just use the last part as alias
+                    const exprWithoutAlias = colExpr.trim().substring(0, colExpr.trim().length - lastPart.length).trim();
+                    if (exprWithoutAlias.length < colExpr.trim().length) {
+                        aliasMatch = [null, lastPart]; // Simulated match
+                    }
+                }
+            }
+
+            let name = aliasMatch ? aliasMatch[1] : colExpr.split('.').pop().trim();
+            // Clean up the name
+            name = name.replace(/[`"']/g, ''); // Remove quotes
+
+            // Simplified data type detection
+            let type = 'VARCHAR'; // Default type
+            const lowerExpr = colExpr.toLowerCase();
+            if (lowerExpr.includes('int') || lowerExpr.includes('number') || lowerExpr.includes('count')) {
+                type = 'INTEGER';
+            } else if (lowerExpr.includes('decimal') || lowerExpr.includes('float') || lowerExpr.includes('double')) {
+                type = 'DECIMAL';
+            } else if (lowerExpr.includes('date') || lowerExpr.includes('time')) {
+                type = 'DATETIME';
+            } else if (lowerExpr.includes('bool')) {
+                type = 'BOOLEAN';
+            }
+
+            // Generate example data based on type
+            let example = '示例数据';
+            switch (type) {
+                case 'INTEGER':
+                    example = '123';
+                    break;
+                case 'DECIMAL':
+                    example = '123.45';
+                    break;
+                case 'DATETIME':
+                    example = '2023-01-01 12:00:00';
+                    break;
+                case 'BOOLEAN':
+                    example = 'true/false';
+                    break;
+            }
+
+            return {
+                name: name,
+                type: type,
+                example: example,
+                expression: colExpr.trim()
+            };
+        }
+
+        // Update column preview based on SQL query
+        function updateColumnPreview() {
+            const sql = document.getElementById('sourceSql')?.value.trim();
+            const previewSection = document.getElementById('sqlPreviewSection');
+
+            if (!sql || sql === '') {
+                previewSection.classList.add('hidden');
+                return;
+            }
+
+            previewSection.classList.remove('hidden');
+
+            // Extract column names from SQL
+            const columns = extractColumnsFromSql(sql);
+
+            // Update the preview table
+            const tbody = document.getElementById('sqlPreviewBody');
+            tbody.innerHTML = '';
+
+            if (columns.length > 0) {
+                columns.forEach(col => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${col.name}</td>
+                        <td>${col.type || 'VARCHAR'}</td>
+                        <td>${col.example || '示例数据'}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="3">无法解析SQL中的列名，请检查SQL语法</td>
+                `;
+                tbody.appendChild(row);
+            }
+        }
+
+        // Navigate to the previous step
+        function previousStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                updateStepsDisplay();
+            }
+        }
+
+        // Navigate to the next step
+        function nextStep() {
+            if (currentStep === 0) {
+                // Validate basic info
+                const taskName = document.getElementById('taskName').value.trim();
+                if (!taskName) {
+                    document.getElementById('taskName-error').textContent = '请输入任务名称';
+                    return;
+                } else {
+                    document.getElementById('taskName-error').textContent = '';
+                }
+            } else if (currentStep === 1) {
+                // Validate data source selection based on type
+                const sourceDb = document.getElementById('sourceDb').value;
+                const targetDb = document.getElementById('targetDb').value;
+
+                if (!sourceDb || !targetDb) {
+                    alert('请选择数据源');
+                    return;
+                }
+
+                // Check source type radio buttons
+                const sourceType = document.querySelector('input[name="sourceType"]:checked').value;
+
+                let isValid = true;
+                if (sourceType === 'table') {
+                    const sourceTable = document.getElementById('sourceTable').value.trim();
+                    const targetTable = document.getElementById('targetTable').value.trim();
+
+                    if (!sourceTable || !targetTable) {
+                        alert('请填写所有必填项');
+                        isValid = false;
+                    }
+                } else if (sourceType === 'sql') {
+                    const sourceSql = document.getElementById('sourceSql').value.trim();
+                    const targetTableSql = document.getElementById('targetTableSql').value.trim();
+
+                    if (!sourceSql || !targetTableSql) {
+                        alert('请填写所有必填项');
+                        isValid = false;
+                    } else {
+                        // Additional validation for SQL query
+                        if (!/^(\s*SELECT|\s*WITH)/i.test(sourceSql)) {
+                            alert('SQL查询必须以SELECT或WITH开头');
+                            isValid = false;
+                        }
+                    }
+                }
+
+                if (!isValid) {
+                    return;
+                }
+            }
+
+            if (currentStep < 5) {
+                currentStep++;
+                updateStepsDisplay();
+            }
+        }
+
+        // Update the steps display and content visibility
+        function updateStepsDisplay() {
+            // Update step indicators
+            for (let i = 0; i < 6; i++) {
+                const step = document.getElementById(`step${i}`);
+                const content = document.getElementById(`stepContent${i}`);
+
+                if (i < currentStep) {
+                    step.classList.remove('active');
+                    step.classList.add('completed');
+                } else if (i === currentStep) {
+                    step.classList.add('active');
+                    step.classList.remove('completed');
+                } else {
+                    step.classList.remove('active');
+                    step.classList.remove('completed');
+                }
+
+                // Show/hide content
+                if (i === currentStep) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            }
+        }
+
+        // Add a new field mapping row
+        function addFieldMapping() {
+            const tableBody = document.getElementById('fieldMappingsTable');
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td><input type="text" class="field-mapping-input" placeholder="源字段名"></td>
+                <td>
+                    <select class="field-mapping-select">
+                        <option value="none">无转换</option>
+                        <option value="type_conversion">类型转换</option>
+                        <option value="string_process">字符串处理</option>
+                        <option value="date_format">日期格式化</option>
+                        <option value="math_operation">数学运算</option>
+                    </select>
+                </td>
+                <td><input type="text" class="field-mapping-input" placeholder="目标字段名"></td>
+                <td><button type="button" class="btn btn-danger btn-mini" onclick="removeFieldMapping(this)">删除</button></td>
+            `;
+            tableBody.appendChild(newRow);
+        }
+
+        // Remove a field mapping row
+        function removeFieldMapping(button) {
+            const tableBody = document.getElementById('fieldMappingsTable');
+            if (tableBody.rows.length > 1) {
+                button.closest('tr').remove();
+            } else {
+                alert('至少需要保留一行字段映射');
+            }
+        }
+
+        // Toggle JOIN options visibility
+        function toggleJoinOptions() {
+            const checkbox = document.getElementById('enableJoin');
+            const joinOptions = document.getElementById('joinOptions');
+
+            if (checkbox.checked) {
+                joinOptions.classList.remove('hidden');
+            } else {
+                joinOptions.classList.add('hidden');
+            }
+        }
+
+        // Toggle time filter options visibility
+        function toggleTimeFilterOptions() {
+            const checkbox = document.getElementById('enableTimeFilter');
+            const timeFilterOptions = document.getElementById('timeFilterOptions');
+
+            if (checkbox.checked) {
+                timeFilterOptions.classList.remove('hidden');
+            } else {
+                timeFilterOptions.classList.add('hidden');
+            }
+        }
+
+        // Toggle dependency options visibility
+        function toggleDependencyOptions() {
+            const checkbox = document.getElementById('enableDependencies');
+            const dependencyOptions = document.getElementById('dependencyOptions');
+
+            if (checkbox.checked) {
+                dependencyOptions.classList.remove('hidden');
+            } else {
+                dependencyOptions.classList.add('hidden');
+            }
+        }
+
+        // Finish configuration
+        function finishConfiguration() {
+            // Collect all the form data
+            const taskData = {
+                name: document.getElementById('taskName').value,
+                description: document.getElementById('taskDescription').value,
+                sourceDb: document.getElementById('sourceDb').value,
+                targetDb: document.getElementById('targetDb').value,
+                sourceType: document.querySelector('input[name="sourceType"]:checked').value
+            };
+
+            if (taskData.sourceType === 'table') {
+                taskData.sourceTable = document.getElementById('sourceTable').value;
+                taskData.targetTable = document.getElementById('targetTable').value;
+            } else {
+                taskData.sourceSql = document.getElementById('sourceSql').value;
+                taskData.targetTableSql = document.getElementById('targetTableSql').value;
+            }
+
+            console.log('Task configuration completed:', taskData);
+
+            alert('任务配置完成！即将保存...');
+            saveTask();
+        }
+
+        // Save task
+        function saveTask() {
+            alert('任务已保存！');
+            // In a real application, this would collect all the form data and submit it
+        }
+    </script>
+</body>
+</html>

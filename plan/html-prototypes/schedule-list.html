@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELT系统 - 调度列表</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        .main-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            height: 60px;
+            background-color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 1px 4px rgba(0,21,41,.08);
+        }
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #f0f2f5;
+        }
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background-color: #409eff;
+            color: white;
+        }
+        .btn-success {
+            background-color: #67c23a;
+            color: white;
+        }
+        .btn-warning {
+            background-color: #e6a23c;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #f56c6c;
+            color: white;
+        }
+        .btn-info {
+            background-color: #909399;
+            color: white;
+        }
+        .btn-mini {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        }
+        .table th, .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ebeef5;
+        }
+        .table th {
+            background-color: #f5f7fa;
+            font-weight: bold;
+        }
+        .status-running {
+            background-color: #f0f9eb;
+            color: #67c23a;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .status-success {
+            background-color: #ecf5ff;
+            color: #409eff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .status-failed {
+            background-color: #fef0f0;
+            color: #f56c6c;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .status-pending {
+            background-color: #f4f4f5;
+            color: #909399;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .status-disabled {
+            background-color: #c8c9cc;
+            color: #909399;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .search-bar {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        }
+        .search-input {
+            padding: 8px 12px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            width: 250px;
+            margin-right: 10px;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .page-btn {
+            padding: 6px 12px;
+            margin: 0 4px;
+            border: 1px solid #dcdfe6;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .page-btn.active {
+            background: #409eff;
+            color: white;
+            border-color: #409eff;
+        }
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background-color: #ecf5ff;
+            color: #409eff;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header">
+            <h3>调度列表</h3>
+            <div>
+                <button type="button" class="btn btn-default" onclick="location.href='dashboard.html'">返回仪表板</button>
+                <button type="button" class="btn btn-primary" onclick="location.href='schedule-create.html'">创建调度</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="search-bar">
+                <input type="text" class="search-input" placeholder="搜索调度任务名称...">
+                <button type="button" class="btn btn-primary">搜索</button>
+                <select style="padding: 8px; border: 1px solid #dcdfe6; border-radius: 4px; margin-left: 10px;">
+                    <option value="">全部状态</option>
+                    <option value="enabled">启用</option>
+                    <option value="disabled">禁用</option>
+                </select>
+            </div>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>调度名称</th>
+                        <th>关联任务</th>
+                        <th>调度类型</th>
+                        <th>调度配置</th>
+                        <th>状态</th>
+                        <th>下次执行时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>每日订单同步</td>
+                        <td>订单数据同步</td>
+                        <td><span class="tag">Cron</span></td>
+                        <td>0 2 * * *</td>
+                        <td><span class="status-success">启用</span></td>
+                        <td>2023-01-16 02:00:00</td>
+                        <td>
+                            <button class="btn btn-primary btn-mini" onclick="editSchedule(1)">编辑</button>
+                            <button class="btn btn-info btn-mini" onclick="pauseSchedule(1)">暂停</button>
+                            <button class="btn btn-danger btn-mini" onclick="deleteSchedule(1)">删除</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>每小时用户更新</td>
+                        <td>用户信息同步</td>
+                        <td><span class="tag">Interval</span></td>
+                        <td>每1小时</td>
+                        <td><span class="status-running">启用</span></td>
+                        <td>2023-01-15 16:00:00</td>
+                        <td>
+                            <button class="btn btn-primary btn-mini" onclick="editSchedule(2)">编辑</button>
+                            <button class="btn btn-info btn-mini" onclick="pauseSchedule(2)">暂停</button>
+                            <button class="btn btn-danger btn-mini" onclick="deleteSchedule(2)">删除</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>每周报表汇总</td>
+                        <td>销售报表汇总</td>
+                        <td><span class="tag">Cron</span></td>
+                        <td>0 6 * * 1</td>
+                        <td><span class="status-disabled">禁用</span></td>
+                        <td>-</td>
+                        <td>
+                            <button class="btn btn-primary btn-mini" onclick="editSchedule(3)">编辑</button>
+                            <button class="btn btn-success btn-mini" onclick="resumeSchedule(3)">启用</button>
+                            <button class="btn btn-danger btn-mini" onclick="deleteSchedule(3)">删除</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>每月数据清理</td>
+                        <td>产品数据更新</td>
+                        <td><span class="tag">Cron</span></td>
+                        <td>0 3 1 * *</td>
+                        <td><span class="status-success">启用</span></td>
+                        <td>2023-02-01 03:00:00</td>
+                        <td>
+                            <button class="btn btn-primary btn-mini" onclick="editSchedule(4)">编辑</button>
+                            <button class="btn btn-info btn-mini" onclick="pauseSchedule(4)">暂停</button>
+                            <button class="btn btn-danger btn-mini" onclick="deleteSchedule(4)">删除</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="pagination">
+                <button class="page-btn">上一页</button>
+                <button class="page-btn active">1</button>
+                <button class="page-btn">2</button>
+                <button class="page-btn">下一页</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function editSchedule(id) {
+            alert(`编辑调度 ${id}`);
+            // In a real application, this would navigate to an edit page
+        }
+
+        function pauseSchedule(id) {
+            if (confirm(`确定要暂停调度吗？`)) {
+                alert('调度已暂停');
+            }
+        }
+
+        function resumeSchedule(id) {
+            if (confirm(`确定要启用调度吗？`)) {
+                alert('调度已启用');
+            }
+        }
+
+        function deleteSchedule(id) {
+            if (confirm(`确定要删除调度吗？`)) {
+                alert('调度已删除');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELT系统 - 创建调度</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        .main-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            height: 60px;
+            background-color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 1px 4px rgba(0,21,41,.08);
+        }
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #f0f2f5;
+        }
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 4px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: #409eff;
+        }
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background-color: #409eff;
+            color: white;
+        }
+        .btn-default {
+            background-color: #c6e2ff;
+            color: #409eff;
+        }
+        .form-actions {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .schedule-options {
+            display: none;
+        }
+        .schedule-options.active {
+            display: block;
+        }
+        .cron-helper {
+            background: #f5f7fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .cron-examples {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #606266;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header">
+            <h3>创建调度</h3>
+            <div>
+                <button type="button" class="btn btn-default" onclick="location.href='schedule-list.html'">返回列表</button>
+                <button type="button" class="btn btn-default" onclick="location.href='dashboard.html'">返回仪表板</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="form-container">
+                <form id="scheduleForm">
+                    <div class="form-group">
+                        <label for="scheduleName">调度名称 *</label>
+                        <input type="text" id="scheduleName" name="scheduleName" placeholder="请输入调度名称" required>
+                        <div id="scheduleName-error" class="error-message" style="color: red; font-size: 12px; margin-top: 5px;"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="associatedTask">关联任务 *</label>
+                        <select id="associatedTask" name="associatedTask" required>
+                            <option value="">请选择关联的任务</option>
+                            <option value="1">订单数据同步</option>
+                            <option value="2">用户信息同步</option>
+                            <option value="3">产品数据更新</option>
+                            <option value="4">销售报表汇总</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="scheduleType">调度类型 *</label>
+                        <select id="scheduleType" name="scheduleType" onchange="showScheduleOptions()" required>
+                            <option value="">请选择调度类型</option>
+                            <option value="cron">Cron表达式</option>
+                            <option value="interval">时间间隔</option>
+                            <option value="date">日期时间</option>
+                        </select>
+                    </div>
+
+                    <div id="cronOptions" class="schedule-options">
+                        <div class="form-group">
+                            <label for="cronExpression">Cron表达式 *</label>
+                            <input type="text" id="cronExpression" name="cronExpression" placeholder="例如: 0 2 * * * (每天凌晨2点执行)">
+                        </div>
+                        <div class="cron-helper">
+                            <strong>Cron表达式说明:</strong>
+                            <div>格式: 秒 分 时 日 月 周 (年份可选)</div>
+                            <div class="cron-examples">
+                                <div>每分钟执行: * * * * *</div>
+                                <div>每小时执行: 0 * * * *</div>
+                                <div>每天凌晨2点执行: 0 2 * * *</div>
+                                <div>每周一上午6点执行: 0 6 * * 1</div>
+                                <div>每月1号上午3点执行: 0 3 1 * *</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="intervalOptions" class="schedule-options">
+                        <div class="grid-2col">
+                            <div class="form-group">
+                                <label for="intervalAmount">间隔时间</label>
+                                <input type="number" id="intervalAmount" name="intervalAmount" min="1" placeholder="请输入数字">
+                            </div>
+                            <div class="form-group">
+                                <label for="intervalUnit">时间单位</label>
+                                <select id="intervalUnit" name="intervalUnit">
+                                    <option value="seconds">秒</option>
+                                    <option value="minutes">分钟</option>
+                                    <option value="hours">小时</option>
+                                    <option value="days">天</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="dateOptions" class="schedule-options">
+                        <div class="form-group">
+                            <label for="dateSchedule">执行时间</label>
+                            <input type="datetime-local" id="dateSchedule" name="dateSchedule">
+                        </div>
+                    </div>
+
+                    <div class="section-title">高级配置</div>
+
+                    <div class="grid-2col">
+                        <div class="form-group">
+                            <label for="retryCount">失败重试次数</label>
+                            <input type="number" id="retryCount" name="retryCount" min="0" max="10" value="3" placeholder="默认3次">
+                        </div>
+                        <div class="form-group">
+                            <label for="retryInterval">重试间隔(秒)</label>
+                            <input type="number" id="retryInterval" name="retryInterval" min="1" value="300" placeholder="默认300秒">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dependencyTasks">依赖任务</label>
+                        <select id="dependencyTasks" name="dependencyTasks" multiple size="4" style="height: auto;">
+                            <option value="1">订单数据同步</option>
+                            <option value="2">用户信息同步</option>
+                            <option value="3">产品数据更新</option>
+                            <option value="4">销售报表汇总</option>
+                        </select>
+                        <small>按住Ctrl键可多选</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="scheduleDescription">调度描述</label>
+                        <textarea id="scheduleDescription" name="scheduleDescription" rows="3" placeholder="请输入调度描述信息"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-default" onclick="location.href='schedule-list.html'">取消</button>
+                        <button type="button" class="btn btn-primary" onclick="saveSchedule()">保存调度</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showScheduleOptions() {
+            const scheduleType = document.getElementById('scheduleType').value;
+
+            // Hide all options
+            document.getElementById('cronOptions').classList.remove('active');
+            document.getElementById('intervalOptions').classList.remove('active');
+            document.getElementById('dateOptions').classList.remove('active');
+
+            // Show selected option
+            if (scheduleType === 'cron') {
+                document.getElementById('cronOptions').classList.add('active');
+            } else if (scheduleType === 'interval') {
+                document.getElementById('intervalOptions').classList.add('active');
+            } else if (scheduleType === 'date') {
+                document.getElementById('dateOptions').classList.add('active');
+            }
+        }
+
+        function saveSchedule() {
+            // Simple validation
+            const scheduleName = document.getElementById('scheduleName').value.trim();
+            const associatedTask = document.getElementById('associatedTask').value;
+            const scheduleType = document.getElementById('scheduleType').value;
+
+            if (!scheduleName || !associatedTask || !scheduleType) {
+                alert('请填写必填项！');
+                return;
+            }
+
+            // Additional validation based on schedule type
+            if (scheduleType === 'cron') {
+                const cronExpression = document.getElementById('cronExpression').value.trim();
+                if (!cronExpression) {
+                    alert('请填写Cron表达式！');
+                    return;
+                }
+            } else if (scheduleType === 'interval') {
+                const intervalAmount = document.getElementById('intervalAmount').value;
+                if (!intervalAmount) {
+                    alert('请填写间隔时间！');
+                    return;
+                }
+            } else if (scheduleType === 'date') {
+                const dateSchedule = document.getElementById('dateSchedule').value;
+                if (!dateSchedule) {
+                    alert('请选择执行时间！');
+                    return;
+                }
+            }
+
+            alert('调度保存成功！');
+            // In a real application, this would submit the form
+        }
+    </script>
+</body>
+</html>

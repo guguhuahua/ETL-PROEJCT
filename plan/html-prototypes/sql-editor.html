@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELT系统 - SQL查询编辑器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            height: 60px;
+            background-color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 1px 4px rgba(0,21,41,.08);
+        }
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            background-color: #f0f2f5;
+            overflow: hidden;
+        }
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .editor-header {
+            padding: 10px 15px;
+            background-color: #f5f7fa;
+            border-bottom: 1px solid #ebeef5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .editor-area {
+            flex: 1;
+            display: flex;
+        }
+        .sql-editor {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            resize: none;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            outline: none;
+            overflow: auto;
+        }
+        .preview-pane {
+            width: 40%;
+            border-left: 1px solid #ebeef5;
+            padding: 15px;
+            background-color: #fafafa;
+            overflow-y: auto;
+        }
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background-color: #409eff;
+            color: white;
+        }
+        .btn-default {
+            background-color: #c6e2ff;
+            color: #409eff;
+        }
+        .btn-success {
+            background-color: #67c23a;
+            color: white;
+        }
+        .btn-mini {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        .result-preview {
+            margin-top: 15px;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .table th, .table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ebeef5;
+            font-size: 12px;
+        }
+        .table th {
+            background-color: #f5f7fa;
+            font-weight: bold;
+        }
+        .sql-templates {
+            margin-top: 15px;
+        }
+        .template-btn {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            text-align: left;
+            background: #e6f4ff;
+            border: 1px solid #b3daff;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .template-btn:hover {
+            background: #d2eefd;
+        }
+        .validation-result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .validation-error {
+            background-color: #fef0f0;
+            color: #f56c6c;
+            border: 1px solid #fde2e2;
+        }
+        .validation-success {
+            background-color: #f0f9eb;
+            color: #67c23a;
+            border: 1px solid #e0f1d3;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h3>SQL查询编辑器</h3>
+        <div>
+            <button type="button" class="btn btn-default" onclick="location.href='elt-config.html'">返回配置</button>
+            <button type="button" class="btn btn-primary" onclick="executeQuery()">执行查询</button>
+            <button type="button" class="btn btn-success" onclick="saveQuery()">保存查询</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="editor-container">
+            <div class="editor-header">
+                <div>查询编辑器</div>
+                <div>
+                    <button type="button" class="btn btn-default btn-mini" onclick="validateSql()">语法检查</button>
+                    <button type="button" class="btn btn-default btn-mini" onclick="formatSql()">格式化</button>
+                </div>
+            </div>
+            <div class="editor-area">
+                <textarea id="sqlEditor" class="sql-editor" placeholder="在此输入您的SQL查询语句，例如：
+SELECT
+    o.order_id,
+    o.order_date,
+    c.customer_name,
+    SUM(oi.quantity * oi.price) as total_amount
+FROM orders o
+JOIN customers c ON o.customer_id = c.id
+JOIN order_items oi ON o.order_id = oi.order_id
+WHERE o.order_date >= '2023-01-01'
+GROUP BY o.order_id, o.order_date, c.customer_name
+ORDER BY total_amount DESC">SELECT
+    o.order_id,
+    o.order_date,
+    c.customer_name,
+    SUM(oi.quantity * oi.price) as total_amount
+FROM orders o
+JOIN customers c ON o.customer_id = c.id
+JOIN order_items oi ON o.order_id = oi.order_id
+WHERE o.order_date >= '2023-01-01'
+GROUP BY o.order_id, o.order_date, c.customer_name
+ORDER BY total_amount DESC</textarea>
+
+                <div class="preview-pane">
+                    <h4>查询预览</h4>
+                    <div id="validationResult" class="validation-result"></div>
+                    <div class="result-preview">
+                        <h5>结果列预览</h5>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>列名</th>
+                                    <th>类型</th>
+                                    <th>示例值</th>
+                                </tr>
+                            </thead>
+                            <tbody id="columnPreview">
+                                <!-- Column preview will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="sql-templates">
+                        <h5>SQL模板</h5>
+                        <button class="template-btn" onclick="applyTemplate('join')">JOIN查询</button>
+                        <button class="template-btn" onclick="applyTemplate('aggregate')">聚合查询</button>
+                        <button class="template-btn" onclick="applyTemplate('union')">联合查询</button>
+                        <button class="template-btn" onclick="applyTemplate('subquery')">子查询</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize editor
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load SQL query from session storage if available
+            const savedSql = sessionStorage.getItem('currentSqlQuery');
+            if (savedSql && savedSql !== 'undefined' && savedSql !== 'null') {
+                document.getElementById('sqlEditor').value = savedSql;
+            }
+
+            updateColumnPreview();
+
+            // Add event listener for content changes
+            document.getElementById('sqlEditor').addEventListener('input', function() {
+                updateColumnPreview();
+
+                // Save current query to session storage
+                sessionStorage.setItem('currentSqlQuery', this.value);
+            });
+        });
+
+        // Apply SQL template
+        function applyTemplate(type) {
+            const editor = document.getElementById('sqlEditor');
+            let template = '';
+
+            switch(type) {
+                case 'join':
+                    template = `SELECT
+    t1.column1,
+    t2.column2,
+    t3.column3
+FROM table1 t1
+JOIN table2 t2 ON t1.id = t2.ref_id
+JOIN table3 t3 ON t2.id = t3.ref_id
+WHERE t1.status = 'active'`;
+                    break;
+                case 'aggregate':
+                    template = `SELECT
+    category,
+    COUNT(*) as count,
+    SUM(amount) as total_amount,
+    AVG(price) as avg_price,
+    MAX(date_created) as latest_date
+FROM products
+GROUP BY category
+HAVING COUNT(*) > 10
+ORDER BY total_amount DESC`;
+                    break;
+                case 'union':
+                    template = `SELECT id, name, 'users' as source_table FROM users
+UNION ALL
+SELECT id, name, 'customers' as source_table FROM customers
+ORDER BY id`;
+                    break;
+                case 'subquery':
+                    template = `SELECT
+    customer_id,
+    order_date,
+    total_amount
+FROM orders o
+WHERE total_amount > (
+    SELECT AVG(total_amount)
+    FROM orders
+    WHERE customer_id = o.customer_id
+)
+ORDER BY total_amount DESC`;
+                    break;
+            }
+
+            editor.value = template;
+            updateColumnPreview();
+        }
+
+        // Validate SQL syntax
+        function validateSql() {
+            const sql = document.getElementById('sqlEditor').value.trim();
+            if (!sql) {
+                showValidationResult('请输入SQL查询语句', 'error');
+                return false;
+            }
+
+            // Basic validation checks
+            const issues = [];
+
+            if (!/^(\s*SELECT|\s*WITH)/i.test(sql)) {
+                issues.push('SQL语句应以SELECT或WITH开头');
+            }
+
+            if (!/(FROM|JOIN|UNION|VALUES)/i.test(sql)) {
+                issues.push('SQL语句缺少数据源（FROM/JOIN/UNION等）');
+            }
+
+            if (sql.match(/\(/g) && sql.match(/\)/g) &&
+                (sql.match(/\(/g) || []).length !== (sql.match(/\)/g) || []).length) {
+                issues.push('括号不匹配');
+            }
+
+            if (issues.length > 0) {
+                showValidationResult('SQL语法检查发现以下问题：<br>' + issues.join('<br>'), 'error');
+                return false;
+            } else {
+                showValidationResult('SQL语法检查通过', 'success');
+                return true;
+            }
+        }
+
+        // Show validation result
+        function showValidationResult(message, type) {
+            const resultDiv = document.getElementById('validationResult');
+            resultDiv.innerHTML = message;
+            resultDiv.className = 'validation-result ' +
+                (type === 'error' ? 'validation-error' : 'validation-success');
+            resultDiv.style.display = 'block';
+
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                resultDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Format SQL query
+        function formatSql() {
+            const sql = document.getElementById('sqlEditor').value;
+            // Very basic formatting - in a real application, use a proper SQL formatter
+            const formatted = sql
+                .replace(/,/g, ',\n    ')  // Put each column on a new line
+                .replace(/JOIN/g, '\nJOIN')
+                .replace(/WHERE/g, '\nWHERE')
+                .replace(/GROUP BY/g, '\nGROUP BY')
+                .replace(/HAVING/g, '\nHAVING')
+                .replace(/ORDER BY/g, '\nORDER BY')
+                .replace(/UNION/g, '\nUNION');
+
+            document.getElementById('sqlEditor').value = formatted;
+        }
+
+        // Update column preview
+        function updateColumnPreview() {
+            const sql = document.getElementById('sqlEditor').value.trim();
+            if (!sql) {
+                document.getElementById('columnPreview').innerHTML = '<tr><td colspan="3">请输入SQL查询语句</td></tr>';
+                return;
+            }
+
+            const columns = extractColumnsFromSql(sql);
+            const tbody = document.getElementById('columnPreview');
+
+            if (columns.length > 0) {
+                tbody.innerHTML = '';
+                columns.forEach(col => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${col.name}</td>
+                        <td>${col.type}</td>
+                        <td>${col.example}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="3">无法解析SQL中的列名</td></tr>';
+            }
+        }
+
+        // Extract column names from SQL query (same function as in elt-config.html)
+        function extractColumnsFromSql(sql) {
+            const lowerSql = sql.toLowerCase();
+            const selectIndex = lowerSql.indexOf('select');
+            const fromIndex = lowerSql.indexOf('from');
+
+            if (selectIndex === -1 || fromIndex === -1 || selectIndex > fromIndex) {
+                return [];
+            }
+
+            // Extract the part between SELECT and FROM
+            const selectPart = sql.substring(selectIndex + 6, fromIndex);
+
+            // Split by commas but respect parentheses for functions
+            const columns = parseColumnList(selectPart);
+
+            return columns;
+        }
+
+        // Parse column list considering functions and aliases
+        function parseColumnList(selectStr) {
+            const columns = [];
+            let currentCol = '';
+            let parenLevel = 0;
+            let inQuotes = false;
+            let quoteChar = null;
+
+            for (let i = 0; i < selectStr.length; i++) {
+                const char = selectStr[i];
+
+                if ((char === '"' || char === "'") && !inQuotes) {
+                    inQuotes = true;
+                    quoteChar = char;
+                } else if (char === quoteChar && inQuotes) {
+                    inQuotes = false;
+                    quoteChar = null;
+                } else if (char === '(' && !inQuotes) {
+                    parenLevel++;
+                } else if (char === ')' && !inQuotes) {
+                    parenLevel--;
+                } else if (char === ',' && parenLevel === 0 && !inQuotes) {
+                    // Found end of column
+                    currentCol = currentCol.trim();
+                    if (currentCol) {
+                        const col = parseSingleColumn(currentCol);
+                        columns.push(col);
+                    }
+                    currentCol = '';
+                    continue;
+                }
+
+                currentCol += char;
+            }
+
+            // Handle last column
+            currentCol = currentCol.trim();
+            if (currentCol) {
+                const col = parseSingleColumn(currentCol);
+                columns.push(col);
+            }
+
+            return columns;
+        }
+
+        // Parse a single column expression
+        function parseSingleColumn(colExpr) {
+            let name = colExpr.split(' ').pop().trim(); // Simplified extraction
+            name = name.replace(/[`"'\[\]]/g, ''); // Remove quotes
+
+            // Simplified data type detection
+            let type = 'VARCHAR'; // Default type
+            const lowerExpr = colExpr.toLowerCase();
+            if (lowerExpr.includes('int') || lowerExpr.includes('number') || lowerExpr.includes('count')) {
+                type = 'INTEGER';
+            } else if (lowerExpr.includes('decimal') || lowerExpr.includes('float') || lowerExpr.includes('double')) {
+                type = 'DECIMAL';
+            } else if (lowerExpr.includes('date') || lowerExpr.includes('time')) {
+                type = 'DATETIME';
+            } else if (lowerExpr.includes('bool')) {
+                type = 'BOOLEAN';
+            } else if (lowerExpr.includes('sum') || lowerExpr.includes('avg') || lowerExpr.includes('min') || lowerExpr.includes('max')) {
+                type = 'DECIMAL';
+            }
+
+            // Generate example data based on type
+            let example = '示例数据';
+            switch (type) {
+                case 'INTEGER':
+                    example = '123';
+                    break;
+                case 'DECIMAL':
+                    example = '123.45';
+                    break;
+                case 'DATETIME':
+                    example = '2023-01-01';
+                    break;
+                case 'BOOLEAN':
+                    example = 'true';
+                    break;
+            }
+
+            return {
+                name: name,
+                type: type,
+                example: example
+            };
+        }
+
+        // Execute the query
+        function executeQuery() {
+            if (validateSql()) {
+                alert('查询执行功能在实际系统中会连接数据库并返回结果。\n当前为原型演示，仅验证语法正确。');
+            }
+        }
+
+        // Save the query back to the main form
+        function saveQuery() {
+            const sql = document.getElementById('sqlEditor').value.trim();
+            if (!sql) {
+                alert('请输入SQL查询语句');
+                return;
+            }
+
+            if (validateSql()) {
+                // Save the SQL query to session storage
+                sessionStorage.setItem('currentSqlQuery', sql);
+
+                // Optionally, update the main form (this would work if the editor was opened as a popup)
+                // In a real application, we'd use window.opener or send message to parent
+                alert('查询已保存，返回主配置页面后将自动填充');
+
+                // Try to update parent window if this page was opened as a popup
+                try {
+                    if (window.opener && !window.opener.closed) {
+                        // Send message to parent window
+                        window.opener.postMessage({
+                            type: 'sqlSaved',
+                            sql: sql
+                        }, '*');
+
+                        // Close this window after a delay
+                        setTimeout(() => {
+                            window.close();
+                        }, 1500);
+                    }
+                } catch(e) {
+                    console.log('Could not update opener window:', e);
+                }
+            }
+        }
+
+        // Listen for messages from parent window
+        window.addEventListener('message', function(event) {
+            // Handle messages from parent window if needed
+        });
+    </script>
+</body>
+</html>

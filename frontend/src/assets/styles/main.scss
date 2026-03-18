@@ -1,0 +1,98 @@
+// Main styles
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', Arial, sans-serif;
+}
+
+// Layout styles
+.layout-container {
+  height: 100vh;
+  display: flex;
+}
+
+.sidebar {
+  width: 200px;
+  background-color: #545c64;
+  overflow-y: auto;
+}
+
+.main-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  height: 60px;
+  background-color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background-color: #f0f2f5;
+}
+
+// Card styles
+.stat-card {
+  text-align: center;
+  padding: 20px;
+
+  .stat-number {
+    font-size: 32px;
+    font-weight: bold;
+    color: #409eff;
+  }
+
+  .stat-label {
+    color: #909399;
+    margin-top: 10px;
+  }
+}
+
+// Form styles
+.form-section {
+  margin-bottom: 20px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 4px;
+}
+
+// Table styles
+.table-container {
+  background: #fff;
+  padding: 20px;
+  border-radius: 4px;
+}
+
+// Status tags
+.status-success {
+  color: #67c23a;
+}
+
+.status-failed {
+  color: #f56c6c;
+}
+
+.status-running {
+  color: #409eff;
+}
+
+.status-pending {
+  color: #909399;
+}
