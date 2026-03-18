@@ -264,14 +264,37 @@ def validate_workflow(nodes, edges):
     if has_cycle(nodes, edges):
         return {'valid': False, 'message': '工作流存在循环依赖'}
 
+    # 验证节点类型
+    allowed_node_types = {'START', 'TASK', 'CONDITION', 'PARALLEL', 'END'}
+    for node in nodes:
+        node_type = node.get('type')
+        if node_type not in allowed_node_types:
+            return {'valid': False, 'message': f'节点类型不合法：{node_type}'}
+
+    # 校验边不重复以及在节点范围内
+    seen_edges = set()
+    for edge in edges:
+        source = edge.get('source')
+        target = edge.get('target')
+        if source not in node_ids:
+            return {'valid': False, 'message': f'边的源节点 {source} 不存在'}
+        if target not in node_ids:
+            return {'valid': False, 'message': f'边的目标节点 {target} 不存在'}
+
+        edge_key = (source, target)
+        if edge_key in seen_edges:
+            return {'valid': False, 'message': f'重复的连线: {source} -> {target}'}
+        seen_edges.add(edge_key)
+
     # 检查任务节点是否关联了有效的任务
     for node in nodes:
         if node.get('type') == 'TASK':
             task_id = node.get('taskId')
-            if task_id:
-                task = ELTTask.query.get(task_id)
-                if not task:
-                    return {'valid': False, 'message': f'任务节点关联的任务ID {task_id} 不存在'}
+            if not task_id:
+                return {'valid': False, 'message': f'任务节点 {node.get("id")} 必须关联 taskId'}
+            task = ELTTask.query.get(task_id)
+            if not task:
+                return {'valid': False, 'message': f'任务节点关联的任务ID {task_id} 不存在'}
 
     return {'valid': True, 'message': ''}
 

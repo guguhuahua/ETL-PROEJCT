@@ -9,6 +9,9 @@ import re
 
 logger = logging.getLogger(__name__)
 
+# 分批处理配置
+BATCH_SIZE = 5000  # 每批处理的行数
+
 
 class ELTEngine:
     """ELT Engine for data migration and transformation"""
@@ -35,6 +38,8 @@ class ELTEngine:
         }
 
         log_lines = []
+        source_connector = None
+        target_connector = None
 
         try:
             log_lines.append(f"[{datetime.utcnow().isoformat()}] 开始执行ELT任务: {task.name}")
@@ -51,26 +56,14 @@ class ELTEngine:
             # 构建源查询
             source_query = self._build_source_query(task)
             log_lines.append(f"源查询SQL: {source_query}")
+            print(f"\n{'='*60}")
+            print(f"[ELT任务] 执行SQL查询:")
+            print(f"{'='*60}")
+            print(source_query)
+            print(f"{'='*60}\n")
+            logger.info(f"执行SQL: {source_query}")
 
-            # 提取数据
-            log_lines.append("正在从源数据库提取数据...")
-            data = source_connector.execute_query(source_query)
-            row_count = len(data)
-            log_lines.append(f"提取完成，共 {row_count} 行数据")
-
-            if row_count == 0:
-                log_lines.append("源数据为空，任务结束")
-                result['log'] = '\n'.join(log_lines)
-                return result
-
-            # 转换数据
-            transformation_rules = task.get_transformation_rules()
-            if transformation_rules and len(transformation_rules) > 0:
-                log_lines.append("正在应用字段映射和转换规则...")
-                data = self._transform_data(data, transformation_rules)
-                log_lines.append(f"转换完成，映射了 {len(transformation_rules)} 个字段")
-
-            # 加载数据 - 根据写入策略
+            # 加载策略
             write_strategy = task.write_strategy or 'append'
             log_lines.append(f"写入策略: {'覆盖写入' if write_strategy == 'overwrite' else '追加写入'}")
 
@@ -85,15 +78,17 @@ class ELTEngine:
                     target_connector.delete_all_data(task.target_table)
                     log_lines.append("目标表数据已删除")
 
-            log_lines.append(f"正在加载数据到目标表: {task.target_table}...")
-            inserted = target_connector.insert_data(task.target_table, data)
-            log_lines.append(f"数据加载完成，成功插入 {inserted} 行")
+            # 分批提取和加载数据
+            log_lines.append("正在从源数据库提取数据...")
+            total_processed = self._batch_extract_and_load(
+                source_connector, target_connector, task, source_query, log_lines
+            )
 
-            result['processed_rows'] = inserted
+            result['processed_rows'] = total_processed
             result['log'] = '\n'.join(log_lines)
 
             log_lines.append(f"[{datetime.utcnow().isoformat()}] ELT任务执行成功")
-            logger.info(f"ELT task {task.id} completed successfully, {inserted} rows processed")
+            logger.info(f"ELT task {task.id} completed successfully, {total_processed} rows processed")
 
             return result
 
@@ -104,6 +99,38 @@ class ELTEngine:
             result['errors'].append(error_msg)
             result['log'] = '\n'.join(log_lines)
             raise
+
+    def _batch_extract_and_load(self, source_connector, target_connector, task, source_query, log_lines) -> int:
+        """分批提取和加载数据"""
+        # 提取数据
+        data = source_connector.execute_query(source_query)
+        total_rows = len(data)
+        log_lines.append(f"提取完成，共 {total_rows} 行数据")
+
+        if total_rows == 0:
+            log_lines.append("源数据为空，任务结束")
+            return 0
+
+        # 转换数据
+        transformation_rules = task.get_transformation_rules()
+        if transformation_rules and len(transformation_rules) > 0:
+            log_lines.append("正在应用字段映射和转换规则...")
+            data = self._transform_data(data, transformation_rules)
+            log_lines.append(f"转换完成，映射了 {len(transformation_rules)} 个字段")
+
+        # 分批插入数据
+        log_lines.append(f"正在加载数据到目标表: {task.target_table}...")
+        total_processed = 0
+
+        for i in range(0, len(data), BATCH_SIZE):
+            batch = data[i:i + BATCH_SIZE]
+            inserted = target_connector.insert_data(task.target_table, batch)
+            total_processed += inserted
+            log_lines.append(f"已处理 {total_processed}/{total_rows} 行...")
+            logger.info(f"Batch {i//BATCH_SIZE + 1}: inserted {inserted} rows, total: {total_processed}")
+
+        log_lines.append(f"数据加载完成，成功插入 {total_processed} 行")
+        return total_processed
 
     def preview_sql(self, task, source_ds, sql: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -147,25 +174,39 @@ class ELTEngine:
 
     def _build_source_query(self, task) -> str:
         """Build source query from task configuration"""
+        print(f"\n[构建SQL] 任务信息:")
+        print(f"  - source_type: {task.source_type}")
+        print(f"  - source_table: {task.source_table}")
+        print(f"  - source_sql: {task.source_sql[:200] if task.source_sql else None}...")
+
         # 根据源类型构建查询
         if task.source_type == 'sql' and task.source_sql:
             query = task.source_sql.strip()
+            print(f"  -> 使用自定义SQL")
         else:
             # 表模式 - 直接从源表查询
             source_table = task.source_table
             if not source_table:
                 raise ValueError("源表名不能为空")
             query = f"SELECT * FROM {source_table}"
+            print(f"  -> 使用表查询模式")
+
+        print(f"[构建SQL] 初始查询: {query}")
 
         # 添加时间过滤条件
         time_filter = task.get_time_filter()
+        print(f"[构建SQL] 时间过滤器: {time_filter}")
+
         if time_filter and time_filter.get('enabled'):
             original_query = query
             query = self._apply_time_filter(query, time_filter)
             logger.info(f"Time filter applied - Field: {time_filter.get('field')}, Original: {original_query}, Filtered: {query}")
+            print(f"[构建SQL] 应用时间过滤后: {query}")
         else:
             logger.info(f"No time filter applied - Enabled: {time_filter.get('enabled') if time_filter else 'N/A'}")
+            print(f"[构建SQL] 未应用时间过滤")
 
+        print(f"[构建SQL] 最终SQL: {query}\n")
         return query
 
     def _apply_time_filter(self, query: str, time_filter: Dict, db_type: str = None) -> str:

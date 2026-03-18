@@ -173,6 +173,7 @@ def execute_scheduled_task(schedule_id: int):
     from models.schedule import Schedule
     from models.task_execution import TaskExecution
     from models.elt_task import ELTTask
+    from models.data_source import DataSource
     from services.elt_engine import ELTEngine
 
     with app.app_context():
@@ -184,6 +185,17 @@ def execute_scheduled_task(schedule_id: int):
         task = ELTTask.query.get(schedule.task_id)
         if not task:
             logger.error(f"Task {schedule.task_id} not found")
+            return
+
+        # 获取源和目标数据源
+        source_ds = DataSource.query.get(task.source_db_id)
+        target_ds = DataSource.query.get(task.target_db_id)
+
+        if not source_ds:
+            logger.error(f"Source datasource {task.source_db_id} not found")
+            return
+        if not target_ds:
+            logger.error(f"Target datasource {task.target_db_id} not found")
             return
 
         # Create execution record
@@ -203,7 +215,7 @@ def execute_scheduled_task(schedule_id: int):
             try:
                 # Execute task
                 engine = ELTEngine()
-                result = engine.execute(task)
+                result = engine.execute(task, source_ds, target_ds)
 
                 # Success
                 execution.status = 'success'

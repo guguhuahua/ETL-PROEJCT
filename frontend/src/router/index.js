@@ -62,21 +62,6 @@ const routes = [
         path: 'schedules/:id/edit',
         name: 'ScheduleEdit',
         component: () => import('@/views/ScheduleCreate.vue')
-      },
-      {
-        path: 'workflows',
-        name: 'WorkflowList',
-        component: () => import('@/views/WorkflowList.vue')
-      },
-      {
-        path: 'workflows/create',
-        name: 'WorkflowCreate',
-        component: () => import('@/views/WorkflowEditor.vue')
-      },
-      {
-        path: 'workflows/:id/edit',
-        name: 'WorkflowEdit',
-        component: () => import('@/views/WorkflowEditor.vue')
       }
     ]
   },

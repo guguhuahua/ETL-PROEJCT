@@ -44,15 +44,6 @@
           <el-menu-item index="/schedules">调度列表</el-menu-item>
           <el-menu-item index="/schedules/create">创建调度</el-menu-item>
         </el-sub-menu>
-
-        <el-sub-menu index="workflows">
-          <template #title>
-            <el-icon><Share /></el-icon>
-            <span>工作流编排</span>
-          </template>
-          <el-menu-item index="/workflows">工作流列表</el-menu-item>
-          <el-menu-item index="/workflows/create">创建工作流</el-menu-item>
-        </el-sub-menu>
       </el-menu>
     </el-aside>
 

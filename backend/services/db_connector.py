@@ -95,62 +95,39 @@ class HiveConnector(BaseConnector):
         self.database = connection_params.get('database', 'default')
         self.username = connection_params.get('username', '')
         self.password = connection_params.get('password', '')
-        self.auth = connection_params.get('auth', 'NONE')  # NONE, PLAIN, KERBEROS, CUSTOM
-        self.thrift_transport = connection_params.get('thrift_transport', None)
+        self.auth = connection_params.get('auth', 'NONE')
 
     def connect(self):
         """Connect to Hive"""
         try:
             from pyhive import hive
-            from thrift.transport import TTransport
-            from thrift.transport import TSocket
-            from thrift.protocol import TBinaryProtocol
 
-            # 构建连接参数
             conn_params = {
                 'host': self.host,
                 'port': self.port,
                 'database': self.database,
             }
 
-            # 根据认证方式配置
             if self.auth == 'KERBEROS':
-                # Kerberos 认证
-                try:
-                    from pyhive.hive import thrift_sasl
-                    from thrift_sasl import TSaslClientTransport
-
-                    conn_params['auth'] = 'KERBEROS'
-                    if self.username:
-                        conn_params['kerberos_service_name'] = self.username
-                except ImportError:
-                    raise ImportError("请安装 thrift_sasl 以支持 Kerberos 认证: pip install thrift_sasl")
-
+                conn_params['auth'] = 'KERBEROS'
+                if self.username:
+                    conn_params['kerberos_service_name'] = self.username
             elif self.auth == 'LDAP':
-                # LDAP 认证 (需要用户名和密码)
                 conn_params['auth'] = 'LDAP'
                 conn_params['username'] = self.username
                 if self.password:
                     conn_params['password'] = self.password
-
             elif self.auth == 'CUSTOM':
-                # CUSTOM 认证 (需要用户名和密码)
                 conn_params['auth'] = 'CUSTOM'
                 conn_params['username'] = self.username
                 if self.password:
                     conn_params['password'] = self.password
-
             elif self.auth == 'PLAIN':
-                # PLAIN 认证 (仅用户名，不传密码)
                 conn_params['auth'] = 'PLAIN'
                 conn_params['username'] = self.username
-
             elif self.auth == 'NOSASL':
-                # 无认证
                 conn_params['auth'] = 'NOSASL'
-
             else:
-                # 默认：仅用户名，无密码
                 if self.username:
                     conn_params['username'] = self.username
 
@@ -158,8 +135,7 @@ class HiveConnector(BaseConnector):
             return self.connection
 
         except ImportError as e:
-            logger.warning(f"PyHive not installed: {e}")
-            raise ImportError("请安装 PyHive: pip install pyhive thrift sasl thrift-sasl")
+            raise ImportError(f"请安装 PyHive: pip install pyhive thrift {e}")
         except Exception as e:
             logger.error(f"Failed to connect to Hive: {e}")
             raise
@@ -208,13 +184,25 @@ class HiveConnector(BaseConnector):
                 return []
 
             cursor = conn.cursor()
+            logger.info(f"Executing Hive query: {query[:200]}..." if len(query) > 200 else f"Executing Hive query: {query}")
             cursor.execute(query)
 
             columns = [desc[0] for desc in cursor.description] if cursor.description else []
             results = []
-            for row in cursor.fetchall():
-                results.append(dict(zip(columns, row)))
 
+            # 分批获取数据
+            batch_size = 10000
+            total_rows = 0
+            while True:
+                rows = cursor.fetchmany(batch_size)
+                if not rows:
+                    break
+                for row in rows:
+                    results.append(dict(zip(columns, row)))
+                total_rows += len(rows)
+                logger.info(f"Fetched {total_rows} rows...")
+
+            logger.info(f"Query completed, total {total_rows} rows fetched")
             cursor.close()
             self.disconnect()
             return results
@@ -387,7 +375,7 @@ class KingbaseConnector(BaseConnector):
             return []
 
     def insert_data(self, table_name: str, data: List[Dict]) -> int:
-        """Insert data into Kingbase table"""
+        """Insert data into Kingbase table with batch processing"""
         if not data:
             return 0
 
@@ -400,16 +388,22 @@ class KingbaseConnector(BaseConnector):
         placeholders = ', '.join(['%s'] * len(columns))
         query = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({placeholders})"
 
-        count = 0
-        for row in data:
-            values = [row.get(col) for col in columns]
-            cursor.execute(query, values)
-            count += 1
+        # 批量插入，每次插入1000条
+        batch_size = 1000
+        total_count = 0
+
+        for i in range(0, len(data), batch_size):
+            batch = data[i:i + batch_size]
+            values_list = [[row.get(col) for col in columns] for row in batch]
+            cursor.executemany(query, values_list)
+            total_count += len(batch)
+            logger.info(f"Inserted {total_count}/{len(data)} rows...")
 
         conn.commit()
         cursor.close()
         self.disconnect()
-        return count
+        logger.info(f"Batch insert completed, total {total_count} rows")
+        return total_count
 
 
 def get_connector(db_type: str, connection_params: Dict[str, Any]) -> BaseConnector:
