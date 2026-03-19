@@ -102,35 +102,48 @@ class ELTEngine:
 
     def _batch_extract_and_load(self, source_connector, target_connector, task, source_query, log_lines) -> int:
         """分批提取和加载数据"""
-        # 提取数据
-        data = source_connector.execute_query(source_query)
-        total_rows = len(data)
-        log_lines.append(f"提取完成，共 {total_rows} 行数据")
+        try:
+            # 提取数据
+            print(f"[ELT] 开始从源数据库提取数据...")
+            log_lines.append("正在执行源查询...")
+            data = source_connector.execute_query(source_query)
+            total_rows = len(data)
+            print(f"[ELT] 提取完成，共 {total_rows} 行数据")
+            log_lines.append(f"提取完成，共 {total_rows} 行数据")
 
-        if total_rows == 0:
-            log_lines.append("源数据为空，任务结束")
-            return 0
+            if total_rows == 0:
+                log_lines.append("源数据为空，任务结束")
+                return 0
 
-        # 转换数据
-        transformation_rules = task.get_transformation_rules()
-        if transformation_rules and len(transformation_rules) > 0:
-            log_lines.append("正在应用字段映射和转换规则...")
-            data = self._transform_data(data, transformation_rules)
-            log_lines.append(f"转换完成，映射了 {len(transformation_rules)} 个字段")
+            # 转换数据
+            transformation_rules = task.get_transformation_rules()
+            if transformation_rules and len(transformation_rules) > 0:
+                log_lines.append("正在应用字段映射和转换规则...")
+                data = self._transform_data(data, transformation_rules)
+                log_lines.append(f"转换完成，映射了 {len(transformation_rules)} 个字段")
 
-        # 分批插入数据
-        log_lines.append(f"正在加载数据到目标表: {task.target_table}...")
-        total_processed = 0
+            # 分批插入数据
+            log_lines.append(f"正在加载数据到目标表: {task.target_table}...")
+            total_processed = 0
 
-        for i in range(0, len(data), BATCH_SIZE):
-            batch = data[i:i + BATCH_SIZE]
-            inserted = target_connector.insert_data(task.target_table, batch)
-            total_processed += inserted
-            log_lines.append(f"已处理 {total_processed}/{total_rows} 行...")
-            logger.info(f"Batch {i//BATCH_SIZE + 1}: inserted {inserted} rows, total: {total_processed}")
+            for i in range(0, len(data), BATCH_SIZE):
+                batch = data[i:i + BATCH_SIZE]
+                print(f"[ELT] 插入批次 {i//BATCH_SIZE + 1}，共 {len(batch)} 行...")
+                inserted = target_connector.insert_data(task.target_table, batch)
+                total_processed += inserted
+                log_lines.append(f"已处理 {total_processed}/{total_rows} 行...")
+                logger.info(f"Batch {i//BATCH_SIZE + 1}: inserted {inserted} rows, total: {total_processed}")
 
-        log_lines.append(f"数据加载完成，成功插入 {total_processed} 行")
-        return total_processed
+            log_lines.append(f"数据加载完成，成功插入 {total_processed} 行")
+            print(f"[ELT] 数据加载完成，成功插入 {total_processed} 行")
+            return total_processed
+
+        except Exception as e:
+            error_msg = f"数据处理失败: {str(e)}"
+            print(f"[ELT] 错误: {error_msg}")
+            log_lines.append(error_msg)
+            logger.error(f"Batch extract and load failed: {e}")
+            raise
 
     def preview_sql(self, task, source_ds, sql: Optional[str] = None) -> Dict[str, Any]:
         """

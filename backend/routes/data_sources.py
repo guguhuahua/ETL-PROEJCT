@@ -5,9 +5,45 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db, DataSource
 from services.db_connector import get_connector
+from datetime import datetime, timezone
 import json
+import logging
 
+logger = logging.getLogger(__name__)
 data_sources_bp = Blueprint('data_sources', __name__)
+
+
+def get_local_tz():
+    """获取本地时区"""
+    try:
+        from zoneinfo import ZoneInfo
+        return ZoneInfo('Asia/Shanghai')
+    except ImportError:
+        import pytz
+        return pytz.timezone('Asia/Shanghai')
+
+
+LOCAL_TZ = get_local_tz()
+
+
+def format_datetime_local(dt: datetime) -> str:
+    """将时间转换为本地时区的标准格式字符串"""
+    if dt is None:
+        return None
+
+    try:
+        # 如果是 naive datetime，假设是 UTC
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+
+        # 转换为本地时区
+        local_dt = dt.astimezone(LOCAL_TZ)
+
+        # 返回标准格式字符串
+        return local_dt.strftime('%Y-%m-%d %H:%M:%S')
+    except Exception as e:
+        logger.error(f"Error formatting datetime: {e}")
+        return str(dt) if dt else None
 
 
 @data_sources_bp.route('', methods=['GET'])
@@ -15,7 +51,12 @@ data_sources_bp = Blueprint('data_sources', __name__)
 def get_data_sources():
     user_id = int(get_jwt_identity())
     data_sources = DataSource.query.filter_by(created_by=user_id).all()
-    return jsonify([ds.to_dict() for ds in data_sources]), 200
+    result = []
+    for ds in data_sources:
+        item = ds.to_dict()
+        item['created_at'] = format_datetime_local(ds.created_at)
+        result.append(item)
+    return jsonify(result), 200
 
 
 @data_sources_bp.route('/<int:ds_id>', methods=['GET'])

@@ -6,7 +6,8 @@ const auth = {
   logout: () => request.post('/auth/logout'),
   getProfile: () => request.get('/auth/profile'),
   updateProfile: (data) => request.put('/auth/profile', data),
-  refreshToken: () => request.post('/auth/refresh')
+  refreshToken: () => request.post('/auth/refresh'),
+  getPublicKey: () => request.get('/auth/public-key')
 }
 
 const dataSources = {
@@ -29,7 +30,9 @@ const eltTasks = {
   delete: (id) => request.delete(`/elt-tasks/${id}`),
   execute: (id) => request.post(`/elt-tasks/${id}/execute`),
   preview: (id, sql) => request.post(`/elt-tasks/${id}/preview`, { sql }),
-  getExecutions: (id) => request.get(`/elt-tasks/${id}/executions`)
+  getExecutions: (id) => request.get(`/elt-tasks/${id}/executions`),
+  getRunning: (id) => request.get(`/elt-tasks/${id}/running`),
+  cancelExecution: (executionId) => request.post(`/elt-tasks/executions/${executionId}/cancel`)
 }
 
 const schedules = {

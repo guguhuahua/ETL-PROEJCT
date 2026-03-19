@@ -31,10 +31,21 @@
             {{ formatDate(row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="250">
+        <el-table-column label="操作" width="300">
           <template #default="{ row }">
             <el-button size="small" @click="editTask(row)">编辑</el-button>
-            <el-button size="small" type="success" @click="executeTask(row)">执行</el-button>
+            <el-button
+              v-if="row.last_status !== 'running'"
+              size="small"
+              type="success"
+              @click="executeTask(row)"
+            >执行</el-button>
+            <el-button
+              v-else
+              size="small"
+              type="warning"
+              @click="cancelTask(row)"
+            >取消</el-button>
             <el-button size="small" type="danger" @click="deleteTask(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -44,7 +55,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '@/api'
@@ -52,12 +63,14 @@ import api from '@/api'
 const router = useRouter()
 const loading = ref(false)
 const tasks = ref([])
+let refreshTimer = null
 
 const getStatusType = (status) => {
   const types = {
     success: 'success',
     failed: 'danger',
     running: 'primary',
+    cancelled: 'warning',
     pending: 'info'
   }
   return types[status] || 'info'
@@ -65,13 +78,23 @@ const getStatusType = (status) => {
 
 const formatDate = (date) => {
   if (!date) return '-'
-  return new Date(date).toLocaleString('zh-CN')
+  // 后端已经返回格式化的本地时间，直接显示
+  return date
 }
 
 const loadTasks = async () => {
   loading.value = true
   try {
     tasks.value = await api.eltTasks.getAll()
+
+    // 如果有正在运行的任务，设置定时刷新
+    const hasRunning = tasks.value.some(t => t.last_status === 'running')
+    if (hasRunning && !refreshTimer) {
+      refreshTimer = setInterval(loadTasks, 5000)
+    } else if (!hasRunning && refreshTimer) {
+      clearInterval(refreshTimer)
+      refreshTimer = null
+    }
   } catch (error) {
     console.error('Failed to load tasks:', error)
   } finally {
@@ -90,11 +113,36 @@ const executeTask = async (row) => {
     ElMessage.success(`执行成功，处理了 ${result.details?.processed_rows || 0} 行数据`)
     loadTasks()
   } catch (error) {
-    ElMessage.error('执行失败')
+    ElMessage.error(error.response?.data?.error || '执行失败')
+  }
+}
+
+const cancelTask = async (row) => {
+  try {
+    await ElMessageBox.confirm(`确定要取消正在执行的任务 "${row.name}" 吗？`, '提示', {
+      type: 'warning'
+    })
+
+    // 获取正在运行的执行记录
+    const runningInfo = await api.eltTasks.getRunning(row.id)
+    if (runningInfo.running && runningInfo.execution) {
+      await api.eltTasks.cancelExecution(runningInfo.execution.id)
+      ElMessage.success('已取消任务')
+      loadTasks()
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('取消失败')
+    }
   }
 }
 
 const deleteTask = async (row) => {
+  if (row.last_status === 'running') {
+    ElMessage.warning('请先取消正在执行的任务')
+    return
+  }
+
   try {
     await ElMessageBox.confirm(`确定要删除任务 "${row.name}" 吗？`, '提示', {
       type: 'warning'
@@ -112,6 +160,12 @@ const deleteTask = async (row) => {
 
 onMounted(() => {
   loadTasks()
+})
+
+onUnmounted(() => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+  }
 })
 </script>
 

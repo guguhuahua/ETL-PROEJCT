@@ -1,14 +1,36 @@
 import { ref, computed } from 'vue'
 import api from '@/api'
+import JSEncrypt from 'jsencrypt'
 
 const token = ref(localStorage.getItem('token') || '')
 const user = ref(JSON.parse(localStorage.getItem('user') || 'null'))
 
 const isAuthenticated = computed(() => !!token.value)
 
+// 加密密码
+function encryptPassword(password, publicKey) {
+  const encrypt = new JSEncrypt()
+  // 格式化公钥
+  const formattedKey = `-----BEGIN PUBLIC KEY-----\n${publicKey}\n-----END PUBLIC KEY-----`
+  encrypt.setPublicKey(formattedKey)
+  return encrypt.encrypt(password)
+}
+
 async function login(credentials) {
   try {
-    const response = await api.auth.login(credentials)
+    // 获取公钥
+    const keyResponse = await api.auth.getPublicKey()
+    const publicKey = keyResponse.public_key
+
+    // 加密密码
+    const encryptedPassword = encryptPassword(credentials.password, publicKey)
+
+    // 发送登录请求
+    const response = await api.auth.login({
+      username: credentials.username,
+      password: encryptedPassword
+    })
+
     token.value = response.access_token
     user.value = response.user
 

@@ -77,7 +77,8 @@ const formatScheduleConfig = (schedule) => {
 
 const formatDate = (date) => {
   if (!date) return '-'
-  return new Date(date).toLocaleString('zh-CN')
+  // 后端已经返回格式化的本地时间，直接显示
+  return date
 }
 
 const loadSchedules = async () => {

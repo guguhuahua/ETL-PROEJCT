@@ -11,8 +11,9 @@ class Config:
     """Base configuration"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
 
-    # Database
+    # Database - Docker环境使用容器内路径，本地开发使用相对路径
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:////app/database.db' if os.path.exists('/app') else \
         'sqlite:///' + os.path.join(os.path.dirname(basedir), 'database.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 

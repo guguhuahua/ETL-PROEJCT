@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  elt-system:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: elt-system:latest
+    container_name: elt-system
+    ports:
+      - "5000:5000"
+    volumes:
+      - ../database.db:/app/database.db
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=your-secret-key-change-me
+      - JWT_SECRET_KEY=your-jwt-secret-key-change-me
+    restart: unless-stopped
